@@ -5,8 +5,6 @@ import ecommerce_store_artifacts from '../../build/contracts/EcommerceStore.json
 var EcommerceStore = contract(ecommerce_store_artifacts);
 
 var ipfsAPI = require('ipfs-api');
-const offchainServer = "http://localhost:3000";
-const categories = ["Art", "Books", "Cameras", "Cell Phones & Accessories", "Clothing", "Computers & Tablets", "Gift Cards & Coupons", "Musical Instruments & Gear", "Pet Supplies", "Pottery & Glass", "Sporting Goods", "Tickets", "Toys & Hobbies", "Video Games"];
 
 var ipfs = ipfsAPI({ host: 'localhost', port: '5001', protocol: 'http' });
 
@@ -67,8 +65,6 @@ window.App = {
                     $("#msg").html("Your bid has been successfully revealed!");
                     $("#msg").show();
                 });
-            }).catch(err => {
-                console.log("block chain error：", err);
             });
             event.preventDefault();
         });
@@ -116,18 +112,55 @@ window.App = {
     },
 };
 
+const offchainServer = "http://localhost:3000";
+const categories = ["Art", "Books", "Cameras", "Cell Phones & Accessories", "Clothing", "Computers & Tablets", "Gift Cards & Coupons", "Musical Instruments & Gear", "Pet Supplies", "Pottery & Glass", "Sporting Goods", "Tickets", "Toys & Hobbies", "Video Games"];
+
+function renderProducts(div, filters) {
+    $.ajax({
+        url: offchainServer + "/products",
+        type: 'get',
+        contentType: "application/json; charset=utf-8",
+        data: filters
+    }).done(function(data) {
+        if (data.length == 0) {
+            $("#" + div).html('No products found');
+        } else {
+            $("#" + div).html('');
+        }
+        while (data.length > 0) {
+            let chunks = data.splice(0, 4);
+            let row = $("<div/>");
+            row.addClass("row");
+            chunks.forEach(function(value) {
+                let node = buildProduct(value);
+                row.append(node);
+            })
+            $("#" + div).append(row);
+        }
+    })
+}
+
+function renderStore() {
+    renderProducts("product-list", {});
+    renderProducts("product-reveal-list", { productStatus: "reveal" });
+    renderProducts("product-finalize-list", { productStatus: "finalize" });
+    categories.forEach(function(value) {
+        $("#categories").append("<div>" + value + "");
+    })
+}
+
 function buildProduct(product) {
     let node = $("<div />");
-    console.log(product);
     node.addClass("col-sm-3 text-center col-margin-bottom-1");
-    node.append("<a href='product.html?id=" + product["blockchainId"] + "'><img src='http://localhost:8080/ipfs/" + product["ipfsImageHash"] + "' width='150px' /></a>");
-    node.append("<div>" + product["name"] + "</div>");
-    node.append("<div>" + product["condition"] == 1 ? "new" : "old" + "</div>");
-    node.append("<div> Ether " + product["price"] + "</div>");
+    node.append("<a href='product.html?id=" + product[0] + "'><img src='http://localhost:9001/ipfs/" + product[3] + "' width='150px' /></a>");
+    node.append("<div>" + product[1] + "</div>");
+    node.append("<div>" + product[2] + "</div>");
+    node.append("<div>" + product[5] + "</div>");
+    node.append("<div>" + product[6] + "</div>");
+    node.append("<div> Ether " + product[7] + "</div>");
     return node;
 }
 
-// 保存商品信息
 function saveProduct(reader, decodedParams) {
     let imageId, descId;
     saveImageOnIpfs(reader).then(id => {
@@ -153,7 +186,6 @@ function saveImageOnIpfs(reader) {
 }
 
 function saveTextBlobOnIpfs(blob) {
-    console.log("blob:", blob);
     return new Promise((resolve, reject) => {
         let buffer = Buffer.from(blob, 'utf-8');
         ipfs.add(buffer).then(res => {
@@ -169,7 +201,7 @@ function saveTextBlobOnIpfs(blob) {
 function saveProductToBlockchain(params, imageId, descId) {
     console.log("params in save product: ", params);
     let auctionStartTime = Date.parse(params["product-auction-start"]) / 1000;
-    let auctionEndTime = auctionStartTime + parseInt(params["product-auction-end"]) * 60;
+    let auctionEndTime = auctionStartTime + parseInt(params["product-auction-end"]) * 24 * 60 * 60;
     EcommerceStore.deployed().then(i => {
         i.addProductToStore(params["product-name"], params["product-category"], imageId, descId, auctionStartTime, auctionEndTime, web3.toWei(params["product-price"], 'ether'), parseInt(params["product-condition"]), { from: web3.eth.accounts[0] }).then(res => {
             $("#msg").show();
@@ -186,7 +218,7 @@ function renderProductDetails(productId) {
                 desc = file.toString();
                 $("#product-desc").append("<div>" + desc + "</div>");
             });
-            $("#product-image").append("<img src='http://localhost:8080/ipfs/" + p[3] + "' width='250px' />");
+            $("#product-image").append("<img src='http://localhost:9001/ipfs/" + p[3] + "' width='250px' />");
             $("#product-name").html(p[1]);
             $("#product-price").html(displayPrice(p[7]));
             $("#product-id").val(p[0]);
@@ -271,37 +303,3 @@ window.addEventListener('load', function() {
     }
     App.start();
 });
-
-function renderProducts(div, filters) {
-    $.ajax({
-        url: offchainServer + "/products",
-        type: 'get',
-        contentType: "application/json; charset=utf-8",
-        data: filters
-    }).done(function(data) {
-        if (data.length == 0) {
-            $("#" + div).html('No products found');
-        } else {
-            $("#" + div).html('');
-        }
-        while (data.length > 0) {
-            let chunks = data.splice(0, 4);
-            let row = $("<div/>");
-            row.addClass("row");
-            chunks.forEach(function(value) {
-                let node = buildProduct(value);
-                row.append(node);
-            })
-            $("#" + div).append(row);
-        }
-    })
-}
-
-function renderStore() {
-    renderProducts("product-list", {});
-    renderProducts("product-reveal-list", { productStatus: "reveal" });
-    renderProducts("product-finalize-list", { productStatus: "finalize" });
-    categories.forEach(function(value) {
-        $("#categories").append("<div>" + value + "");
-    })
-}
