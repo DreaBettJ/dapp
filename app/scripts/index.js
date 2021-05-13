@@ -77,7 +77,6 @@ window.App = {
         }
 
         $("#bidding").submit(event => {
-            $("#msg").hide();
             let amount = $("#bid-amount").val();
             let sendAmount = $("#bid-send-amount").val();
             let secretText = $("#secret-text").val();
@@ -85,8 +84,8 @@ window.App = {
             let sealedBid = web3.sha3(web3.toWei(amount, 'ether').toString() + secretText);
             EcommerceStore.deployed().then(i => {
                 i.bid(parseInt(productId), sealedBid, { from: web3.eth.accounts[0], value: web3.toWei(sendAmount, 'ether') }).then(res => {
-                    $("#msg").html("Your bid has been successfully submitted!");
-                    $("#msg").show();
+                    showSuccessMessage("our bid has been successfully submitted!");
+                    location.reload();
                 }).catch(err => {
                     console.log(err);
                     showErrorInfo(err);
@@ -96,14 +95,13 @@ window.App = {
         });
 
         $("#revealing").submit(event => {
-            $("#msg").hide();
             let amount = $("#actual-amount").val();
             let secretText = $("#reveal-secret-text").val();
             let productId = $("#product-id").val();
             EcommerceStore.deployed().then(i => {
                 i.revealBid(parseInt(productId), web3.toWei(amount, 'ether').toString(), secretText, { from: web3.eth.accounts[0] }).then(res => {
-                    $("#msg").html("Your bid has been successfully revealed!");
-                    $("#msg").show();
+                    showSuccessMessage("Your bid has been successfully revealed!");
+                    location.reload();
                 }).catch(err => {
                     showErrorInfo(err);
                 });
@@ -112,12 +110,10 @@ window.App = {
         });
 
         $("#finalize-auction").submit(event => {
-            $("#msg").hide();
             let productId = $("#product-id").val();
             EcommerceStore.deployed().then(i => {
                 i.finalizeAuction(parseInt(productId), { from: web3.eth.accounts[0] }).then(res => {
-                    $("#msg").html("The auction has been finalized and winner declared.");
-                    $("#msg").show();
+                    showSuccessMessage("The auction has been finalized and winner declared.");
                     location.reload();
                 }).catch(err => {
                     showErrorInfo(err);
@@ -142,7 +138,7 @@ window.App = {
         $("#refund-funds").click(() => {
             let productId = new URLSearchParams(window.location.search).get("id");
             EcommerceStore.deployed().then(i => {
-                $("#msg").html("Your transaction has been submitted. Please wait for few seconds for the confirmation").show();
+                showSuccessMessage("Your transaction has been submitted. Please wait for few seconds for the confirmation");
                 i.refundAmountToBuyer(productId, { from: web3.eth.accounts[0] }).then(res => {
                     location.reload();
                 }).catch(err => {
