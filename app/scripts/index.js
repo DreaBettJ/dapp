@@ -151,7 +151,7 @@ window.App = {
     },
 };
 
-const offchainServer = "http://106.14.115.11:3000";
+const offchainServer = "http://106.14.115.11:10000";
 const categories = ["Art", "Books", "Cameras", "Cell Phones & Accessories", "Clothing", "Computers & Tablets", "Gift Cards & Coupons", "Musical Instruments & Gear", "Pet Supplies", "Pottery & Glass", "Sporting Goods", "Tickets", "Toys & Hobbies", "Video Games"];
 
 function renderProducts(div, filters) {

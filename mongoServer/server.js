@@ -48,7 +48,7 @@ app.get('/products', function(req, res) {
     })
 });
 
-app.listen(3000, function() {
+app.listen(10000, function() {
     console.log('Ebay Ethereum server listening on port 3000!');
 });
 
