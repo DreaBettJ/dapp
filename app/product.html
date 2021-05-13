@@ -1,77 +1,206 @@
 <!DOCTYPE html>
 <html>
+
 <head>
- <title>Decentralized Ecommerce Store</title>
- <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
- <link href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' rel='stylesheet' type='text/css'>
- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
- <script src="./app.js"></script>
+    <title>Decentralized Ecommerce Store</title>
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' rel='stylesheet' type='text/css'>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="./app.js"></script>
+    <!-- 引入 layui.js -->
+    <script src="//unpkg.com/layui@2.6.6/dist/layui.js"></script>
+    <!-- 引入 layui.css -->
+    <link rel="stylesheet" href="//unpkg.com/layui@2.6.6/dist/css/layui.css">
+    <style>
+        .err-msg {
+            color: #de6666;
+            text-align: left;
+            background-color: #3d1010;
+            border-color: red;
+        }
+        
+        .err-msg .layui-layer-content {
+            font-size: 16.7px;
+            padding: 8px 10px;
+        }
+        
+        .success-msg {
+            color: #66ba51;
+            text-align: left;
+            background-color: #2a381a;
+            border-color: green;
+        }
+        
+        .success-msg .layui-layer-content {
+            font-size: 16.7px;
+            padding: 8px 10px;
+        }
+        
+        #product-name {
+            font-size: 19px;
+        }
+        
+        #product-auction-end {
+            color: red;
+        }
+        
+        .product-plane {
+            border-color: rgb(177, 175, 167);
+            overflow: auto;
+            padding-left: 18px 24px;
+            padding: 4px 26px;
+            margin-bottom: 14px;
+        }
+        
+        .product-plane>* {
+            margin: 3px;
+        }
+        
+        .detail-main {
+            margin-top: 0px;
+        }
+        
+        .product-plane .layui-form-label {
+            padding: 8px !important;
+        }
+        
+        #finalize-auction {
+            margin-left: 11.3px;
+        }
+        
+        #escrow-info>* {
+            margin: 8px 1px;
+            font-size: 20px;
+        }
+        
+        #product-price {
+            color: red;
+        }
+    </style>
 </head>
+
 <body>
- <div class="container">
-  <h1 class="text-center">Product Details</h1>
-  <div class="container">
-   <div class="row" id="product-details">
-    <div style="display: none;" class="alert alert-success" id="msg"></div>
-    <div class="col-sm-12">
-     <div class="col-sm-4">
-      <div id="product-image"></div>
-      <div id="product-name"></div>
-      <div id="product-auction-end"></div>
-     </div>
-     <div class="col-sm-8">
-      <h3>Start Price: <span id="product-price"></span></h3>
-      <form id="bidding" class="col-sm-4">
-       <h4>Your Bid</h4>
-       <div class="form-group">
-        <label for="bid-amount">Enter Bid Amount</label>
-        <input type="text" class="form-control" name="bid-amount" id="bid-amount" placeholder="Amount > Start Price" required="required">
-       </div>
-       <div class="form-group">
-        <label for="bid-send-amount">Enter Amount To Send</label>
-        <input type="text" class="form-control" name="bid-send-amount" id="bid-send-amount" placeholder="Amount >= Bid Amount" required="required">
-       </div>
-       <div class="form-group">
-        <label for="secret-text">Enter Secret Text</label>
-        <input type="text" class="form-control" name="secret-text" id="secret-text" placeholder="Any random text" required="required">
-       </div>
-       <input type="hidden" name="product-id" id="product-id" />
-       <button type="submit" class="btn btn-primary">Submit Bid</button>
-      </form>
-      <form id="revealing" class="col-sm-4">
-       <h4>Reveal Bid</h4>
-       <div class="form-group">
-        <label for="actual-amount">Amount You Bid</label>
-        <input type="text" class="form-control" name="actual-amount" id="actual-amount" placeholder="Amount > Start Price" required="required">
-       </div>
-       <div class="form-group">
-        <label for="reveal-secret-text">Enter Secret Text</label>
-        <input type="text" class="form-control" name="reveal-secret-text" id="reveal-secret-text" placeholder="Any random text" required="required">
-       </div>
-       <input type="hidden" name="product-id" id="product-id" />
-       <button type="submit" class="btn btn-primary">Reveal Bid</button>
-      </form>
-      <form id="finalize-auction" class="col-sm-6">
-        <input type="hidden" name="product-id" id="product-id" />
-        <button type="submit" class="btn form-submit">Finalize Auction</button>
-      </form>
-      <div id="product-status"></div>
-      <div id="escrow-info">
-        <div id="buyer"></div>
-        <div id="seller"></div>
-        <div id="arbiter"></div>
-        <div id="release-count"></div>
-        <div id="refund-count"></div>
-        <a id="release-funds" class="btn form-submit">Release Amount to Seller</a>
-        <a id="refund-funds" class="btn form-submit">Refund Amount to Buyer</a>
-      </div>
-     </div>
+    <div class="container-fluid layui-main layui-layout layui-layout-admin" id="product-details">
+        <div class="layui-header">
+            <div class="layui-logo layui-hide-xs layui-bg-black">
+                <a href="http://localhost:8081/" style="color: grey;">Ether-Ebay</a>
+            </div>
+
+            <!-- 头部区域（可配合layui 已有的水平导航） -->
+            <ul class="layui-nav layui-layout-left">
+                <li>
+                    <h1 class="layui-nav-item">Product Details</h1>
+                </li>
+            </ul>
+        </div>
+
+        <div class="layui-main" style="position: absolute;top: 60px;left: -30px;">
+            <div class="layui-row layui-col-space30 detail-main" style="height: 80vh;">
+                <div class="layui-col-md4">
+
+                    <div class="layui-panel product-plane" id="prduct-info-plane" style="overflow:auto;">
+
+                        <div id="product-image"></div>
+                        <p>
+                            <span id="product-name">Product Name</sapn>
+                        </p>
+                        <p>
+                          <span id="product-auction-end">Auction ends in 22 hours53 minutes39 seconds</span>
+                        </p>
+
+                        <p>
+                            <span id="product-status"></span>
+                        </p>
+
+                        <h3 id="product-price">Start Price: <span id="product-price"></span></h3>
+
+                        <div id="product-desc">
+                            <h2>Product Description</h2>
+                        </div>
+                    </div>
+
+
+                </div>
+                <div class="layui-col-md8">
+
+                    <div class="layui-panel product-plane" id="bidding-plane">
+                        <h1 class="plane-title">Bit The Product</h1>
+                        <form id="bidding" class="layui-form layui-form-pane">
+                            <div class="layui-form-item">
+                                <label class="layui-form-label" for="bid-amount">BidAmount</label>
+                                <div class="layui-input-block">
+                                    <input type="text" class="layui-input" name="bid-amount" id="bid-amount" placeholder="Amount > Start Price" required="required">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label" for="bid-send-amount">SendAmount</label>
+                                <div class="layui-input-block">
+                                    <input type="text" class="layui-input" name="bid-send-amount" id="bid-send-amount" placeholder="Amount >= Bid Amount" required="required">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label" for="secret-text">SecretText</label>
+                                <div class="layui-input-block">
+                                    <input type="text" class="layui-input" name="secret-text" id="secret-text" placeholder="Any random text" required="required">
+                                </div>
+                            </div>
+                            <input type="hidden" name="product-id" id="product-id" />
+                            <button type="submit" lay-submit class="layui-btn">Submit</button>
+                        </form>
+                    </div>
+
+                    <div class="layui-panel product-plane" id="revealing-plane">
+                        <h1 class="plane-title">Reveal Bid</h1>
+                        <form id="revealing" class="layui-form layui-form-pane">
+                            <div class="layui-form-item">
+                                <label class="layui-form-label" for="actual-amount">YourBid</label>
+                                <div class="layui-input-block">
+                                    <input type="text" class="layui-input" name="actual-amount" id="actual-amount" placeholder="Amount > Start Price" required="required">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label" for="reveal-secret-text">SecretText</label>
+                                <div class="layui-input-block">
+                                    <input type="text" class="layui-input" name="reveal-secret-text" id="reveal-secret-text" placeholder="Any random text" required="required">
+                                </div>
+                            </div>
+                            <input type="hidden" name="product-id" id="product-id" />
+                            <button type="submit" lay-submit class="layui-btn">Submit</button>
+                        </form>
+                    </div>
+
+                    <div class="layui-panel product-plane" id="finalize-auction-plane">
+                        <h1 class="plane-title">Finalize Auction</h1>
+                        <form id="finalize-auction" class="layui-inline" style="float: left;margin-left: 3px;">
+                            <input type="hidden" name="product-id" id="product-id" />
+                            <button type="submit" lay-submit class="layui-btn">Finalize Auction</button>
+                        </form>
+                    </div>
+
+                    <div class="layui-panel product-plane" id="escrow-info-plane" style="overflow:auto;">
+                        <h1 class="plane-title">Escrow Info</h1>
+                        <div id="escrow-info">
+                            <div id="buyer">buyer name</div>
+                            <div id="seller">seller name</div>
+                            <div id="arbiter">arbiter name</div>
+                            <div id="release-count">release:1</div>
+                            <div id="refund-count">refund:1</div>
+                        </div>
+                    </div>
+
+                    <div class="layui-panel product-plane" id="escrow-operter-plane">
+                        <h1 class="plane-title">Escrow Operter</h1>
+                        <a id="release-funds" class="layui-btn layui-btn-normal">Release Amount to Seller</a>
+                        <a id="refund-funds" class="layui-btn layui-btn-normal">Refund Amount to Buyer</a>
+                    </div>
+
+
+
+                </div>
+            </div>
+        </div>
     </div>
-    <div id="product-desc" class="col-sm-12">
-     <h2>Product Description</h2>
-    </div>
-   </div>
-  </div>
- </div>
+
 </body>
+
 </html>

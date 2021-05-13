@@ -27,18 +27,19 @@ app.get('/products', function(req, res) {
     current_time = Math.round(new Date() / 1000);
     query = { productStatus: { $eq: 0 } }
 
-    if (Object.keys(req.query).length === 0) {
-        query['auctionEndTime'] = { $gt: current_time }
-    } else if (req.query.category !== undefined) {
-        query['auctionEndTime'] = { $gt: current_time }
+    if (req.query.category !== undefined) {
         query['category'] = { $eq: req.query.category }
-    } else if (req.query.productStatus !== undefined) {
+    }
+
+    if (req.query.productStatus !== undefined) {
         if (req.query.productStatus == "reveal") {
-            query['auctionEndTime'] = { $lt: current_time, $gt: current_time - (60 * 60) }
+            query['auctionEndTime'] = { $lt: current_time, $gt: current_time - (200) }
         } else if (req.query.productStatus == "finalize") {
-            query['auctionEndTime'] = { $lt: current_time - (60 * 60) }
+            query['auctionEndTime'] = { $lt: current_time - (200) }
             query['productStatus'] = { $eq: 0 }
         }
+    } else {
+        query['auctionEndTime'] = { $gt: current_time }
     }
 
     ProductModel.find(query, null, { sort: 'auctionEndTime' }, function(err, items) {

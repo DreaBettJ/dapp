@@ -1,42 +1,220 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>Decentralized Ecommerce Store</title>
+    <title>Ether-Ebay</title>
+    <meta charset="utf-8">
+
     <link href='https://fonts.proxy.ustclug.org/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
-    <link href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' rel='stylesheet' type='text/css'>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.js"></script>
     <script src="./app.js"></script>
+    <!-- 引入 layui.css -->
+    <link rel="stylesheet" href="https://www.layuicdn.com/layui/css/layui.css"></link>
+    <!-- 引入 layui.js -->
+    <script src="https://www.layuicdn.com/layui/layui.js"></script>
+
+    <style>
+        .produce-card:hover {
+            transform: scale(1.05);
+            border-color: grey;
+        }
+        
+        .produce-card {
+            overflow: hidden;
+            text-align: center;
+            border-radius: 10px;
+        }
+        
+        .produce-card .produce-name {
+            font-weight: bolder;
+            margin: 6px 0px;
+            font-size: 17px;
+        }
+        
+        .produce-card p {
+            font-size: 10px;
+            margin: 2px 0px;
+        }
+        
+        .produce-card .produce-price {
+            color: #df0021;
+            font-size: 15px;
+        }
+        
+        .err-msg {
+            color: #de6666;
+            text-align: left;
+            background-color: #3d1010;
+            border-color: red;
+        }
+        
+        .err-msg .layui-layer-content {
+            font-size: 16.7px;
+            padding: 8px 10px;
+        }
+        
+        .success-msg {
+            color: #66ba51;
+            text-align: left;
+            background-color: #2a381a;
+            border-color: green;
+        }
+        
+        .success-msg .layui-layer-content {
+            font-size: 16.7px;
+            padding: 8px 10px;
+        }
+    </style>
 </head>
 
 <body>
-    <div class="container-fluid">
-        <h1>Ecommerce Store</h1>
-        <div>Total Products: <span id="total-products"></span></div>
-        <a href="list-item.html" class="btn btn-primary">List Item</a>
-        <div class="row">
-            <div class="col-sm-2">
-                <h2>Categories</h2>
-                <div id="categories">
-                </div>
+    <div class="container-fluid layui-main layui-layout layui-layout-admin">
+        <div class="layui-header">
+            <div class="layui-logo layui-hide-xs layui-bg-black">
+                <a href="http://localhost:8081/" style="color: grey;">Ether-Ebay</a>
             </div>
-            <div class="col-sm-10">
-                <div class="row">
-                    <h2 class="text-center">Products To Buy</h2>
-                    <div class="row">
-                        <div class="row" id="product-list">
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <h2 class="text-center">Products In Reveal Stage</h2>
-                    <div class="row">
-                        <div class="row" id="product-reveal-list">
-                        </div>
+
+            <!-- 头部区域（可配合layui 已有的水平导航） -->
+            <ul class="layui-nav layui-layout-left">
+                <li>
+                    <h1 class="layui-nav-item">List Product Plane</h1>
+                </li>
+            </ul>
+
+            <ul class="layui-nav layui-layout-right">
+
+                <li class="layui-nav-item" style="padding-right: 18px;">
+                    <div>Produce Count: <span id="total-products"></span></div>
+                </li>
+                <li class="layui-nav-item layui-hide-xs">
+                    <button id="to-sell" class="layui-btn">To Sell</button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="layui-side layui-bg-black">
+            <div class="layui-side-scroll">
+                <ul id="categories" class="layui-nav layui-nav-tree">
+                </ul>
+            </div>
+        </div>
+
+        <div class="layui-body">
+            <div style="padding: 15px;">
+                <div class="layui-tab layui-tab-card" style="overflow: auto;">
+                    <ul class="layui-tab-title">
+                        <li class="layui-this">Buy Produce</li>
+                        <li>Reveal Produce</li>
+                        <li>Finalize Produce</li>
+                    </ul>
+                    <div class="layui-tab-content" style="height: 100px;">
+                        <div class="layui-tab-item layui-show layui-fluid" id="product-list"></div>
+                        <div class="layui-tab-item layui-fluid" id="product-reveal-list"></div>
+                        <div class="layui-tab-item layui-fluid" id="product-finalize-list"></div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+
+    <div id="form-div" style="display: none;">
+        <form class="layui-form" id="add-item-to-store" style="padding-right:50px;">
+            <div class="layui-form-item">
+                <label class="layui-form-label" for="product-name">Name</label>
+                <div class="layui-input-block">
+                    <input required type="text" name="product-name" placeholder="iPhone, Jeans, shoes etc" autocomplete="off" class="layui-input" id="product-name">
+                </div>
+            </div>
+
+            <div class="layui-form-item layui-form-text">
+                <label class="layui-form-label" for="product-description">Description</label>
+                <div class="layui-input-block">
+                    <textarea name="product-description" placeholder="iPhone, Jeans, shoes etc" class="layui-textarea" id="product-description"></textarea>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label" for="product-image">Upload Product Photo</label>
+                <div class="layui-input-block">
+                    <a href="javascript:;" class="layui-btn">Choose You Product Photo <input style="opacity:0;height: 100%;width: 100%;position: absolute;top: 0px;left: 0px;" type="file" name="product-image" id="product-image"></a>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">Category</label>
+                <div class="layui-input-block">
+                    <select name="product-category" required name="product-category" id="product-category">
+                      <option>Art</option>
+                      <option>Books</option>
+                      <option>Cameras</option>
+                      <option>Cell Phones & Accessories</option>
+                      <option>Clothing</option>
+                      <option>Coins & Paper Money</option>
+                      <option>Collectibles</option>
+                      <option>Computers/Tablets & Networking</option>
+                      <option>Consumer Electronics</option>
+                      <option>Crafts</option>
+                      <option>DVDs & Movies</option>
+                      <option>Entertainment Memorabilia</option>
+                      <option>Gift Cards & Coupons</option>
+                      <option>Music</option>
+                      <option>Musical Instruments & Gear</option>
+                      <option>Pet Supplies</option>
+                      <option>Pottery & Glass</option>
+                      <option>Sporting Goods</option>
+                      <option>Stamps</option>
+                      <option>Tickets</option>
+                      <option>Toys & Hobbies</option>
+                      <option>Video Games</option>
+                </select>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label" for="product-name">Start Price</label>
+                <div class="layui-input-block">
+                    <input required type="text" placeholder="The Unit Is Ether" class="layui-input" name="product-price" id="product-price">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">Product Condition</label>
+                <div class="layui-input-block">
+                    <select required name="product-condition" id="product-condition">
+                      <option value="1">New</option>
+                      <option value="2">Used</option>
+              </select>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label for="product-auction-start" class="layui-form-label">Auction Start Time</label>
+                <div class="layui-input-block">
+                    <input type="datetime-local" class="layui-input" name="product-auction-start" id="product-auction-start" required="required"></input>
+                </div>
+            </div>
+
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">Auction Days</label>
+                <div class="layui-input-block">
+                    <select required name="product-auction-end" id="product-auction-end">
+                        <option>1</option>
+                        <option>3</option>
+                        <option>5</option>
+                        <option>7</option>
+                        <option>10</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn" lay-submit lay-filter="formDemo">Add To Sell</button>
+                    <button type="reset" class="layui-btn layui-btn-primary">Reset</button>
+                </div>
+            </div>
+        </form>
     </div>
 </body>
 

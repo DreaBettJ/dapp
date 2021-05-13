@@ -44,6 +44,7 @@ contract EcommerceStore{
 
     function addProductToStore(string _name, string _category, string _imageLink, string _descLink
         , uint _auctionStartTime, uint _auctionEndTime, uint _startPrice, uint _productCondition) public{
+        require(now < _auctionEndTime, "Auction end time should be later than now.");
         require(_auctionStartTime < _auctionEndTime, "Auction start time should be earlier than end time.");
         productIndex += 1;
         Product memory product = Product(productIndex, _name, _category, _imageLink, _descLink
@@ -160,5 +161,8 @@ contract EcommerceStore{
     }
     function refundAmountToBuyer(uint _productId) public {
         Escrow(productEscrow[_productId]).refundAmountToBuyer(msg.sender);
+    }
+    function getProductCount() public view returns(uint){
+        return productIndex;
     }
 }

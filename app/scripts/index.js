@@ -8,11 +8,48 @@ var ipfsAPI = require('ipfs-api');
 
 var ipfs = ipfsAPI({ host: 'localhost', port: '5001', protocol: 'http' });
 
+Date.prototype.format = function(fmt) { //author: meizz   
+    var o = {
+        "M+": this.getMonth() + 1, //月份   
+        "d+": this.getDate(), //日   
+        "h+": this.getHours(), //小时   
+        "m+": this.getMinutes(), //分   
+        "s+": this.getSeconds(), //秒   
+        "q+": Math.floor((this.getMonth() + 3) / 3), //季度   
+        "S": this.getMilliseconds() //毫秒   
+    };
+    if (/(y+)/.test(fmt))
+        fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+    for (var k in o)
+        if (new RegExp("(" + k + ")").test(fmt))
+            fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+    return fmt;
+}
+
 window.App = {
     start: function() {
+        var sellLayer;
         var self = this;
-        EcommerceStore.setProvider(web3.currentProvider);
+        EcommerceStore.setProvider(web3.currentProvider || "ws://localhost:8545");
         renderStore();
+        showCategories();
+        showProduceCount();
+
+        // 添加弹出表单
+        $("#to-sell").click((event) => {
+            layui.use('layer', function() {
+                var layer = layui.layer;
+
+                sellLayer = layer.open({
+                    area: ['50%', '85vh'],
+                    type: 1,
+                    title: 'Input Produce Info',
+                    closeBtn: 0,
+                    shadeClose: true,
+                    content: $('#form-div')
+                });
+            });
+        });
 
         var reader;
         $("#product-image").change(event => {
@@ -50,6 +87,9 @@ window.App = {
                 i.bid(parseInt(productId), sealedBid, { from: web3.eth.accounts[0], value: web3.toWei(sendAmount, 'ether') }).then(res => {
                     $("#msg").html("Your bid has been successfully submitted!");
                     $("#msg").show();
+                }).catch(err => {
+                    console.log(err);
+                    showErrorInfo(err);
                 });
             });
             event.preventDefault();
@@ -64,6 +104,8 @@ window.App = {
                 i.revealBid(parseInt(productId), web3.toWei(amount, 'ether').toString(), secretText, { from: web3.eth.accounts[0] }).then(res => {
                     $("#msg").html("Your bid has been successfully revealed!");
                     $("#msg").show();
+                }).catch(err => {
+                    showErrorInfo(err);
                 });
             });
             event.preventDefault();
@@ -78,23 +120,23 @@ window.App = {
                     $("#msg").show();
                     location.reload();
                 }).catch(err => {
-                    $("#msg").html("The auction can not be finalized by the buyer or seller, only a third party aribiter can finalize it");
-                    $("#msg").show();
+                    showErrorInfo(err);
                 });
-            });
+            })
             event.preventDefault();
         });
 
         $("#release-funds").click(() => {
             let productId = new URLSearchParams(window.location.search).get("id");
             EcommerceStore.deployed().then(i => {
-                $("#msg").html("Your transaction has been submitted. Please wait for few seconds for the confirmation").show();
+                showSuccessMessage("Your transaction has been submitted. Please wait for few seconds for the confirmation");
                 i.releaseAmountToSeller(productId, { from: web3.eth.accounts[0] }).then(res => {
                     location.reload();
                 }).catch(err => {
+                    showErrorInfo();
                     console.log(err);
                 });
-            });
+            })
         });
 
         $("#refund-funds").click(() => {
@@ -104,6 +146,7 @@ window.App = {
                 i.refundAmountToBuyer(productId, { from: web3.eth.accounts[0] }).then(res => {
                     location.reload();
                 }).catch(err => {
+                    showErrorInfo(err);
                     console.log();
                 });
             });
@@ -128,36 +171,77 @@ function renderProducts(div, filters) {
             $("#" + div).html('');
         }
         while (data.length > 0) {
-            let chunks = data.splice(0, 4);
+            let chunks = data.splice(0, 3);
+            // 记录层
             let row = $("<div/>");
-            row.addClass("row");
+            row.addClass("layui-row").addClass("layui-col-space30");
+            $("#" + div).append(row);
+
+            // 添加节点
             chunks.forEach(function(value) {
                 let node = buildProduct(value);
                 row.append(node);
             })
-            $("#" + div).append(row);
+
         }
     })
 }
 
-function renderStore() {
-    renderProducts("product-list", {});
-    renderProducts("product-reveal-list", { productStatus: "reveal" });
-    renderProducts("product-finalize-list", { productStatus: "finalize" });
+function renderStore(filter = {}) {
+    renderProducts("product-list", {...filter });
+    renderProducts("product-reveal-list", { productStatus: "reveal", ...filter });
+    renderProducts("product-finalize-list", { productStatus: "finalize", ...filter });
+}
+
+function showProduceCount() {
+    EcommerceStore.deployed().then(i => {
+        i.getProductCount().then(res => {
+            $("#total-products").text(res);
+        }).catch(err => {
+            showErrorInfo(err);
+        });
+    });
+}
+
+function showCategories() {
     categories.forEach(function(value) {
-        $("#categories").append("<div>" + value + "");
+        let filter = { category: value };
+        let element = document.createElement("li");
+        element.className = "layui-nav-item";
+        element.onclick = () => {
+            renderStore(filter);
+        };
+        element.innerHTML = `<a  href="javascript:;">${value}</a>`;
+
+        $("#categories").append(element);
     })
 }
 
 function buildProduct(product) {
+    console.log(product);
     let node = $("<div />");
-    node.addClass("col-sm-3 text-center col-margin-bottom-1");
-    node.append("<a href='product.html?id=" + product[0] + "'><img src='http://localhost:9001/ipfs/" + product[3] + "' width='150px' /></a>");
-    node.append("<div>" + product[1] + "</div>");
-    node.append("<div>" + product[2] + "</div>");
-    node.append("<div>" + product[5] + "</div>");
-    node.append("<div>" + product[6] + "</div>");
-    node.append("<div> Ether " + product[7] + "</div>");
+    node.addClass("layui-col-sm4");
+
+    let a = $("<a />");
+    a.prop("href", `product.html?id=${product.blockchainId}`);
+    console.log("a", a);
+    node.append(a);
+
+    let produceCode = $(`<div />`);
+    produceCode.addClass("layui-panel").addClass("produce-card");
+    a.append(produceCode);
+
+    let beginTime = new Date(product.auctionStartTime * 1000).format("yyyy-MM-dd hh:mm:ss");
+    let endTime = new Date(product.auctionEndTime * 1000).format("yyyy-MM-dd hh:mm:ss");
+
+    produceCode.append(`<p><img style="width: 150px;height:200px;" src="http://localhost:8080/ipfs/${product.ipfsImageHash}" /></p>`);
+
+    produceCode.append("<p class='produce-name'> " + product.name + " </p>");
+    produceCode.append("<p>" + product.category + "</p>");
+    produceCode.append("<p>" + product.productStatus == 0 ? "Used" : "New" + "</p>");
+    produceCode.append("<p> Begin Time:" + beginTime + "</p>");
+    produceCode.append("<p> End Time:" + endTime + "</p>");
+    produceCode.append("<p class='produce-price'>" + web3.fromWei(product.price, "ether") + " Ether</p>");
     return node;
 }
 
@@ -174,6 +258,7 @@ function saveProduct(reader, decodedParams) {
 
 function saveImageOnIpfs(reader) {
     return new Promise((resolve, reject) => {
+        console.log(reader);
         let buffer = Buffer.from(reader.result);
         ipfs.add(buffer).then(res => {
             console.log("res: ", res);
@@ -201,11 +286,16 @@ function saveTextBlobOnIpfs(blob) {
 function saveProductToBlockchain(params, imageId, descId) {
     console.log("params in save product: ", params);
     let auctionStartTime = Date.parse(params["product-auction-start"]) / 1000;
-    let auctionEndTime = auctionStartTime + parseInt(params["product-auction-end"]) * 24 * 60 * 60;
+    let auctionEndTime = auctionStartTime + parseInt(params["product-auction-end"]) * 60;
+
+    console.log("auctionStartTime", auctionStartTime);
+    console.log("auctionEndTime", auctionEndTime);
     EcommerceStore.deployed().then(i => {
         i.addProductToStore(params["product-name"], params["product-category"], imageId, descId, auctionStartTime, auctionEndTime, web3.toWei(params["product-price"], 'ether'), parseInt(params["product-condition"]), { from: web3.eth.accounts[0] }).then(res => {
-            $("#msg").show();
-            $("#msg").html("Your product was successfully added to your store!");
+            showSuccessMessage("success start selling you produce");
+            location.reload();
+        }).catch(err => {
+            showErrorInfo(err);
         });
     });
 }
@@ -213,50 +303,89 @@ function saveProductToBlockchain(params, imageId, descId) {
 function renderProductDetails(productId) {
     EcommerceStore.deployed().then(i => {
         i.getProduct(productId).then(p => {
+            console.log("detail p ", p);
             let desc = '';
             ipfs.cat(p[4]).then(file => {
                 desc = file.toString();
                 $("#product-desc").append("<div>" + desc + "</div>");
             });
-            $("#product-image").append("<img src='http://localhost:9001/ipfs/" + p[3] + "' width='250px' />");
+            $("#product-image").append("<img src='http://localhost:8080/ipfs/" + p[3] + "' width='100%' />");
             $("#product-name").html(p[1]);
             $("#product-price").html(displayPrice(p[7]));
             $("#product-id").val(p[0]);
             $("#product-auction-end").html(displayEndTime(p[6]));
-            $("#bidding, #revealing, #finalize-auction, #escrow-info").hide();
+            $(".product-plane").hide();
+            $("#prduct-info-plane").show();
             let currentTime = getCurrentTime();
             if (parseInt(p[8]) == 1)
                 EcommerceStore.deployed().then(i => {
-                    $("#escrow-info").show();
+                    $("#escrow-info-plane,#escrow-operter-plane").show();
                     i.highestBidderInfo(productId).then(info => {
                         $("#product-status").html("Auction has ended. Product sold to " + info[0] + " for " + displayPrice(info[2]) +
                             "The money is in the escrow. Two of the three participants (Buyer, Seller and Arbiter) have to " +
                             "either release the funds to seller or refund the money to the buyer");
+                    }).catch(err => {
+                        showErrorInfo(err);
                     });
                     i.escrowInfo(productId).then(info => {
                         $("#seller").html('Seller: ' + info[0]);
                         $("#buyer").html('Buyer: ' + info[1]);
                         $("#arbiter").html('Arbiter: ' + info[2]);
                         if (info[3] == true) {
-                            $("#release-funds").hide();
-                            $("#refund-funds").hide();
+                            $("#escrow-operter-plane").hide();
                             $("#release-count").html("Amount from the escrow has been released");
                         } else {
                             $("#release-count").html(info[4] + " of 3 participants have agreed to release funds to seller");
                             $("#refund-count").html(info[5] + " of 3 participants have agreed to refund the buyer");
                         }
+                    }).catch(err => {
+                        showErrorInfo(err);
                     });
+                }).catch(err => {
+                    showErrorInfo(err);
                 });
 
             else if (parseInt(p[8]) == 2)
                 $("#product-status").html("Product not sold");
             else if (currentTime < p[6])
-                $("#bidding").show();
+                $("#bidding-plane").show();
             else if (currentTime - (200) < p[6])
-                $("#revealing").show();
+                $("#revealing-plane").show();
             else
-                $("#finalize-auction").show();
+                $("#finalize-auction-plane").show();
+        }).catch(err => {
+            showErrorInfo(err);
         });
+    });
+}
+
+function showSuccessMessage(value) {
+    showMessage(value, "success-msg", "layui-icon-ok");
+}
+
+function showErrorInfo(err) {
+    layui.define(function() {
+        let RexRes = err.message.match(/\{.+\}/i);
+        if (RexRes != null && RexRes.length != 0) {
+            var messageObjectStr = RexRes[0];
+            var messageObject = JSON.parse(messageObjectStr);
+            var layer = layui.layer;
+            showErrorMessage(messageObject.value.data.message);
+        } else {
+            showErrorMessage(err);
+        }
+    });
+}
+
+function showErrorMessage(value) {
+    showMessage(value, "err-msg", "layui-icon-close");
+}
+
+function showMessage(value, className, icon) {
+    layer.msg(`<i class='layui-icon ${icon}'> </i>${value}`, {
+        skin: className,
+        offset: ["1px"],
+        time: 6000
     });
 }
 
