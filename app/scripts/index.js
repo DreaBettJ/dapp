@@ -6,7 +6,9 @@ var EcommerceStore = contract(ecommerce_store_artifacts);
 
 var ipfsAPI = require('ipfs-api');
 
-var ipfs = ipfsAPI({ host: 'localhost', port: '5001', protocol: 'http' });
+var server = '106.14.115.11';
+
+var ipfs = ipfsAPI({ host: server, port: '5001', protocol: 'http' });
 
 Date.prototype.format = function(fmt) { //author: meizz   
     var o = {
@@ -30,7 +32,7 @@ window.App = {
     start: function() {
         var sellLayer;
         var self = this;
-        EcommerceStore.setProvider(web3.currentProvider || "ws://localhost:8545");
+        EcommerceStore.setProvider(web3.currentProvider);
         renderStore();
         showCategories();
         showProduceCount();
@@ -230,7 +232,7 @@ function buildProduct(product) {
     let beginTime = new Date(product.auctionStartTime * 1000).format("yyyy-MM-dd hh:mm:ss");
     let endTime = new Date(product.auctionEndTime * 1000).format("yyyy-MM-dd hh:mm:ss");
 
-    produceCode.append(`<p><img style="width: 150px;height:200px;" src="http://localhost:8080/ipfs/${product.ipfsImageHash}" /></p>`);
+    produceCode.append(`<p><img style="width: 150px;height:200px;" src="http://${server}:8080/ipfs/${product.ipfsImageHash}" /></p>`);
 
     produceCode.append("<p class='produce-name'> " + product.name + " </p>");
     produceCode.append("<p>" + product.category + "</p>");
@@ -305,7 +307,7 @@ function renderProductDetails(productId) {
                 desc = file.toString();
                 $("#product-desc").append("<div>" + desc + "</div>");
             });
-            $("#product-image").append("<img src='http://localhost:8080/ipfs/" + p[3] + "' width='100%' />");
+            $("#product-image").append(`<img src='http://${server}:8080/ipfs/` + p[3] + "' width='100%' />");
             $("#product-name").html(p[1]);
             $("#product-price").html(displayPrice(p[7]));
             $("#product-id").val(p[0]);
@@ -378,7 +380,7 @@ function showErrorMessage(value) {
 }
 
 function showMessage(value, className, icon) {
-    layer.msg(`<i class='layui-icon ${icon}'> </i>${value}`, {
+    layer.msg(` < i class = 'layui-icon ${icon}' > < /i>${value}`, {
         skin: className,
         offset: ["1px"],
         time: 6000
@@ -424,7 +426,7 @@ window.addEventListener('load', function() {
     if (typeof web3 !== undefined) {
         window.web3 = new Web3(web3.currentProvider);
     } else {
-        window.web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+        window.web3 = new Web3(new Web3.providers.HttpProvider(`http://${server}:8545`));
     }
     App.start();
 });
